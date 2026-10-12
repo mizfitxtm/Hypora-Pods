@@ -20,6 +20,27 @@ Quickshell widget in the bar shows the result.
 - Makes the AirPods the default output when they connect, and moves what is playing onto them.
 - Reconnects after suspend.
 
+## Screenshots
+
+The bar item shows the icon for your model and the lowest battery. It turns red below 15%.
+
+![Bar item at 97% and at 9%](screenshots/bar.png)
+
+Click it for the panel. AirPods Pro 3, in both ears, with Noise Cancellation on:
+
+![Panel for AirPods Pro 3](screenshots/panel-pro3.png)
+
+Headphones such as the AirPods Max show one battery, no case, and the adaptive level
+when Adaptive is on:
+
+![Panel for AirPods Max 2](screenshots/panel-max2.png)
+
+With a pod low and out of the ear, the case charging, and Transparency on:
+
+![Panel with a low battery](screenshots/panel-low-battery.png)
+
+These show fake devices, made with a hand-written status file.
+
 Nothing is polled. The daemon writes a status file when something changes, and the widget watches it.
 
 ## Install
@@ -55,7 +76,7 @@ scripts/install.sh
 
 This builds the daemon, installs `hypora-pods` and `hypora-pods-ctl` into `~/.local/bin`,
 enables the `hypora-pods` user service, and adds the widget to
-`~/.config/quickshell` (a marked line in `Bar.qml`, plus three QML files; the original
+`~/.config/quickshell` (a marked line in `Bar.qml`, plus four QML files; the original
 is kept as `Bar.qml.hypora-pods.bak`).
 
 Options (environment variables): `PREFIX` (default `~/.local`), `SKIP_WIDGET=1` to skip the
@@ -81,7 +102,7 @@ This removes the widget, the service, the binaries, and the stored keys and stat
 
 ## Using it
 
-- Click `Pods NN%` in the bar for the panel. The bar item is hidden until pods are connected.
+- Click the AirPods icon and battery in the bar for the panel. The bar item is hidden until pods are connected.
 - From a terminal:
 
 | Command | Effect |
