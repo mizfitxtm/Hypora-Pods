@@ -1,0 +1,18 @@
+id = "hypora-pods"
+name = "AirPods"
+version = "0.1.0"
+description = "AirPods battery, listening modes and ear detection in the Hypora bar."
+license = "GPL-3.0-or-later"
+
+# A bar item. Hypora copies these into ~/.config/quickshell and shows AirPods in the right of the bar.
+[widget]
+component = "AirPods"
+slot = "right"
+files = ["quickshell/AirPods.qml", "quickshell/AirPodsPanel.qml", "quickshell/AirPodsService.qml"]
+
+# Builds the daemon with cargo, installs it into ~/.local/bin and starts its user service.
+# These run as you, and hypora-plugin shows them (with a checksum) before asking.
+[setup]
+install = "scripts/install.sh"
+remove = "scripts/uninstall.sh"
+env = { SKIP_WIDGET = "1" }

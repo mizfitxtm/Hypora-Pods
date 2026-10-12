@@ -1,0 +1,52 @@
+[Unit]
+Description=hypora-pods AirPods daemon
+# BlueZ and the session bus both arrive with the graphical session.
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/hypora-pods
+Restart=on-failure
+RestartSec=5
+# A crash or kill must not leave a stale status file saying the pods are connected.
+ExecStopPost=/usr/bin/rm -f %S/hypora-pods/status.json
+
+# The status file and pairing keys identify the user's device, so nothing is world-readable.
+UMask=0077
+StateDirectory=hypora-pods
+StateDirectoryMode=0700
+ConfigurationDirectory=hypora-pods
+ConfigurationDirectoryMode=0700
+ProtectSystem=strict
+ProtectHome=read-only
+# The control socket lives in the runtime directory, which ProtectHome also covers.
+ReadWritePaths=%t
+PrivateTmp=yes
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+RestrictSUIDSGID=yes
+RestrictNamespaces=yes
+LockPersonality=yes
+SystemCallArchitectures=native
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+# D-Bus and the audio server are local sockets; L2CAP needs AF_BLUETOOTH.
+RestrictAddressFamilies=AF_UNIX AF_BLUETOOTH
+# Nothing here needs writable-and-executable memory, raw devices, realtime scheduling or other
+# processes' details. The syscall filter allows what normal services use (and pactl, which the
+# daemon runs).
+MemoryDenyWriteExecute=yes
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+RestrictRealtime=yes
+PrivateDevices=yes
+ProtectProc=invisible
+ProcSubset=pid
+
+[Install]
+WantedBy=graphical-session.target

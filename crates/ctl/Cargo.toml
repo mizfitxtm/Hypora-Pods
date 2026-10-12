@@ -1,0 +1,9 @@
+[package]
+name = "hypora-pods-ctl"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+aap-protocol = { version = "0.1.0", path = "../aap-protocol" }
+serde_json = "1.0.151"

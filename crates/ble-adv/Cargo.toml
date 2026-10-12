@@ -1,0 +1,8 @@
+[package]
+name = "ble-adv"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+aes = "0.9.3"
