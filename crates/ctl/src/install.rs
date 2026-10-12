@@ -5,8 +5,9 @@ use std::path::{Path, PathBuf};
 
 // `include_str!` copies the file's text into the binary at compile time, so the
 // installed `hypora-pods-ctl` carries the widget with it.
-const FILES: [(&str, &str); 3] = [
+const FILES: [(&str, &str); 4] = [
     ("AirPods.qml", include_str!("../../../quickshell/AirPods.qml")),
+    ("AirPodsIcon.qml", include_str!("../../../quickshell/AirPodsIcon.qml")),
     ("AirPodsPanel.qml", include_str!("../../../quickshell/AirPodsPanel.qml")),
     ("AirPodsService.qml", include_str!("../../../quickshell/AirPodsService.qml")),
 ];

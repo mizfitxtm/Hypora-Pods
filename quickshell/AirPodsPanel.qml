@@ -49,10 +49,20 @@ Rectangle {
         width: parent.width - 24
         spacing: 4
 
-        Text {
-            text: svc.s.model_name || svc.s.device_name || "AirPods"
-            textFormat: Text.PlainText   // names come from the device; never read them as markup
-            color: Theme.fg; font.family: Theme.font; font.pixelSize: Theme.fontSize + 2; font.bold: true
+        Row {
+            spacing: 10
+            AirPodsIcon {
+                anchors.verticalCenter: parent.verticalCenter
+                iconSize: 28
+                variant: svc.iconVariant
+                color: Theme.fg
+            }
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: svc.s.model_name || svc.s.device_name || "AirPods"
+                textFormat: Text.PlainText   // names come from the device; never read them as markup
+                color: Theme.fg; font.family: Theme.font; font.pixelSize: Theme.fontSize + 2; font.bold: true
+            }
         }
 
         Row2 { visible: svc.isHeadset; title: "Battery"; value: pct(svc.headsetLevel) }

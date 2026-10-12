@@ -13,6 +13,8 @@ Item {
 
     readonly property bool connected: daemonUp && s.connected === true
     readonly property bool isHeadset: s.is_headset === true
+    // Picks the icon outline: Max headphones, Pro-style buds, or plain buds
+    readonly property string iconVariant: isHeadset ? "max" : /pro/i.test(s.model_name ?? "") ? "pro" : "buds"
     readonly property string statePath: (Quickshell.env("XDG_STATE_HOME")
         || Quickshell.env("HOME") + "/.local/state") + "/hypora-pods/status.json"
 
