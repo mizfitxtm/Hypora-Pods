@@ -124,7 +124,6 @@ The widget lives in `quickshell/` and is embedded into `hypora-pods-ctl`.
 cargo test --workspace
 ```
 
-`docs/rust-lessons/` holds notes on the Rust ideas used along the way.
 
 ## Security and privacy
 
