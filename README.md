@@ -16,7 +16,7 @@ Quickshell widget in the bar shows the result.
 - **Ear detection**: pause when one pod is out, when both are out, or never.
 - **Case lid** state and battery while the pods are in the case.
 - **Low-battery notifications** at 10%.
-- **Best codec**: picks SBC-XQ over SBC over AAC for playback, since PipeWire prefers AAC.
+- **Playback profile**: leaves the codec to PipeWire (AAC for AirPods) and only steps in if the card came up with no playback profile.
 - Makes the AirPods the default output when they connect, and moves what is playing onto them.
 - Reconnects after suspend.
 

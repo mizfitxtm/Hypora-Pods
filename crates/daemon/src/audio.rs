@@ -1,5 +1,5 @@
-//! Picks the highest-bitrate playback profile on the AirPods' PulseAudio/PipeWire card.
-//! PipeWire prefers AAC, which is the lowest of the three, so we choose explicitly.
+//! Gets the AirPods' PulseAudio/PipeWire card onto a playback profile.
+//! The codec is PipeWire's own pick (AAC for AirPods): higher bitrates cost airtime a weak link cannot spare.
 
 use serde_json::Value;
 use std::time::Duration;
@@ -15,40 +15,13 @@ pub struct Profile {
     pub available: bool,
 }
 
-fn bitrate_kbps(codec: &str) -> u32 {
-    match codec {
-        "SBC-XQ" => 453,
-        "SBC" => 328,
-        "AAC" => 256,
-        _ => 0,
-    }
-}
-
-/// "a2dp-sink-sbc_xq" -> "SBC-XQ". Plain "a2dp-sink" has no codec in its name.
-fn codec_from_name(name: &str) -> Option<String> {
-    let suffix = name.rsplit_once('-')?.1;
-    if matches!(suffix, "sink" | "source" | "unit" | "headset") {
-        return None;
-    }
-    Some(suffix.to_uppercase().replace('_', "-"))
-}
-
-/// "High Fidelity Playback (A2DP Sink, codec SBC-XQ)" -> "SBC-XQ".
-fn codec_from_description(description: &str) -> Option<String> {
-    let rest = description.split_once("codec ")?.1;
-    Some(rest.split(')').next()?.trim().to_string())
-}
-
-/// The playback-only profile with the highest bitrate; priority breaks ties.
+/// The playback-only profile PipeWire ranks highest.
 /// Profiles with a source (the headset ones) are never chosen: they replace playback quality.
 pub fn best_playback_profile(profiles: &[Profile]) -> Option<&Profile> {
     profiles
         .iter()
         .filter(|p| p.available && p.sinks > 0 && p.sources == 0)
-        .max_by_key(|p| {
-            let codec = codec_from_name(&p.name).filter(|c| bitrate_kbps(c) > 0).or_else(|| codec_from_description(&p.description));
-            (codec.map_or(0, |c| bitrate_kbps(&c)), p.priority)
-        })
+        .max_by_key(|p| p.priority)
 }
 
 /// Active profile and profile list of the named card, from `pactl -f json list cards`.
@@ -136,14 +109,15 @@ pub async fn is_default_sink(address: &str) -> bool {
     pactl(&["get-default-sink"]).await.is_some_and(|s| s.contains(&address.replace(':', "_")))
 }
 
-/// Selects the best playback profile. The card appears a moment after BlueZ reports
-/// the connection, so this retries. A headset profile is left alone: someone is on a call.
+/// Moves a card that came up on no profile onto the best playback one. The card appears a moment
+/// after BlueZ reports the connection, so this retries. A headset profile is left alone (someone
+/// is on a call) and so is an A2DP one: that is the codec PipeWire, or the user, already chose.
 pub async fn select_best(address: String) {
     let card = card_name(&address);
     for _ in 0..10 {
         if let Some(json) = pactl(&["-f", "json", "list", "cards"]).await {
             if let Some((active, profiles)) = parse_card(&json, &card) {
-                if active.starts_with("headset-head-unit") {
+                if active.starts_with("headset-head-unit") || active.starts_with("a2dp-sink") {
                     return;
                 }
                 match best_playback_profile(&profiles) {
@@ -168,15 +142,15 @@ mod tests {
     }
 
     #[test]
-    fn prefers_sbc_xq_over_aac_and_sbc() {
+    fn follows_pipewire_priority_not_bitrate() {
         let profiles = vec![
             p("off", "Off", 0, 0, 0, true),
-            p("a2dp-sink-aac", "High Fidelity Playback (A2DP Sink, codec AAC)", 1, 0, 100, true),
-            p("a2dp-sink-sbc", "High Fidelity Playback (A2DP Sink, codec SBC)", 1, 0, 80, true),
-            p("a2dp-sink-sbc_xq", "High Fidelity Playback (A2DP Sink, codec SBC-XQ)", 1, 0, 90, true),
+            p("a2dp-sink-sbc", "High Fidelity Playback (A2DP Sink, codec SBC)", 1, 0, 133, true),
+            p("a2dp-sink-sbc_xq", "High Fidelity Playback (A2DP Sink, codec SBC-XQ)", 1, 0, 132, true),
+            p("a2dp-sink", "High Fidelity Playback (A2DP Sink, codec AAC)", 1, 0, 134, true),
             p("headset-head-unit", "Headset Head Unit (HSP/HFP)", 1, 1, 200, true),
         ];
-        assert_eq!(best_playback_profile(&profiles).unwrap().name, "a2dp-sink-sbc_xq");
+        assert_eq!(best_playback_profile(&profiles).unwrap().name, "a2dp-sink");
     }
 
     #[test]
@@ -186,15 +160,6 @@ mod tests {
             p("headset-head-unit", "x", 1, 1, 200, true),
         ];
         assert_eq!(best_playback_profile(&profiles), None);
-    }
-
-    #[test]
-    fn reads_codec_from_description_when_name_has_none() {
-        let profiles = vec![
-            p("a2dp-sink", "High Fidelity Playback (A2DP Sink, codec SBC)", 1, 0, 50, true),
-            p("a2dp-sink-aac", "x", 1, 0, 10, true),
-        ];
-        assert_eq!(best_playback_profile(&profiles).unwrap().name, "a2dp-sink");
     }
 
     #[test]
