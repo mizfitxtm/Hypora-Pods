@@ -34,7 +34,7 @@ pub fn parse(data: &[u8]) -> Option<Vec<Reading>> {
         return None;
     }
     data[7..]
-        .chunks_exact(5)
+        .as_chunks::<5>().0.iter()
         .map(|e| {
             if e[1] != 1 || e[4] != 1 {
                 return None;

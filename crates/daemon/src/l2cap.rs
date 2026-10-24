@@ -76,7 +76,8 @@ impl L2capStream {
             }
         }
 
-        let fd = AsyncFd::new(owned)?;
+        // SAFETY: `owned` is a valid descriptor that only this AsyncFd holds, and it is never closed or duplicated while registered.
+        let fd = unsafe { AsyncFd::register(owned)? };
         // A non-blocking connect finishes when the socket becomes writable;
         // SO_ERROR then says whether it worked.
         let _ = fd.writable().await?;

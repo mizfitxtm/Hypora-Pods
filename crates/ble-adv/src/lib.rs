@@ -1,6 +1,8 @@
 //! Apple "proximity pairing" BLE advertisements: who sent it, and what it says.
 //! Pure functions, no I/O. Derived from librepods by Kavish Devar (GPL-3.0).
 
+#![forbid(unsafe_code)]
+
 use aes::cipher::{Block, BlockCipherDecrypt, BlockCipherEncrypt, KeyInit};
 use aes::Aes128;
 

@@ -19,7 +19,7 @@ fn advert_parse_accepts_any_bytes_and_never_exceeds_100() {
     for len in 0..=60 {
         for _ in 0..2000 {
             let mut data: Vec<u8> = (0..len).map(|_| rng.byte()).collect();
-            if len > 0 && rng.byte() % 2 == 0 {
+            if len > 0 && rng.byte().is_multiple_of(2) {
                 data[0] = 0x07; // the type we accept, so more inputs get past the first check
             }
             if let Some(a) = Advert::parse(&data) {

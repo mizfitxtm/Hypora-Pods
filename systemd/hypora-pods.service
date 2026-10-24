@@ -44,7 +44,10 @@ MemoryDenyWriteExecute=yes
 SystemCallFilter=@system-service
 SystemCallErrorNumber=EPERM
 RestrictRealtime=yes
-PrivateDevices=yes
+# Tap controls read the pods' input device (see udev/). char-input covers every input device, so file
+# permissions decide which ones the daemon can open (the udev rule opens only the pods' one).
+DevicePolicy=closed
+DeviceAllow=char-input r
 ProtectProc=invisible
 ProcSubset=pid
 

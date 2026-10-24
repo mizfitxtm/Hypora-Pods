@@ -116,6 +116,24 @@ This removes the widget, the service, the binaries, and the stored keys and stat
 
 A command the connected model does not support is refused with a message.
 
+### Tap controls
+
+The AirPods send every stem press to Linux as a separate play key and never turn two or three presses
+into skip or previous. With the udev rule below installed, the daemon counts the taps itself:
+**1 tap play/pause, 2 taps next, 3 taps previous**. It takes the pods' key device exclusively, so
+your Hyprland media-key bindings are not involved and still work for your keyboard.
+
+The rule lets you, as the logged-in user, read the AirPods' key device and nothing else. The install
+script puts it in place for you: it says what it is about to do and then runs `sudo`, so you will be asked
+for your password once. Without a terminal it prints the command instead. To do it by hand:
+
+```sh
+sudo install -m644 udev/70-hypora-pods.rules /etc/udev/rules.d/
+sudo udevadm control --reload && sudo udevadm trigger --subsystem-match=input
+```
+
+If taps still do nothing, reconnect the AirPods. Without the rule the daemon says so in its log and the pods behave as before.
+
 To work on the widget without AirPods, run a fake device:
 
 ```sh
@@ -155,6 +173,8 @@ cargo test --workspace
 - Everything it reads from the AirPods or from Bluetooth advertisements is treated as untrusted:
   parsers check lengths, and tests feed them random bytes. Device names are shown as plain text.
 - The control socket only accepts the fixed verbs listed above.
+- Tap controls read one input device, the Apple Bluetooth media-key device, through a user-only ACL. The unit allows
+  character input devices read-only and keeps every other device closed.
 
 ## Credits and licence
 

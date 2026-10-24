@@ -1,6 +1,8 @@
 //! AirPods AAP wire protocol: packet builders and parsers. Pure, no I/O.
 //! Derived from librepods by Kavish Devar (GPL-3.0).
 
+#![forbid(unsafe_code)]
+
 pub mod battery;
 pub mod control;
 pub mod ear;

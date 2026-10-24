@@ -40,7 +40,7 @@ fn uuids_of(props: &Props) -> Vec<String> {
 }
 
 fn event_for(path: &str, props: &Props) -> Option<Event> {
-    if !is_airpods(&uuids_of(props)) || bool_of(props, "Connected")? != true {
+    if !is_airpods(&uuids_of(props)) || !bool_of(props, "Connected")? {
         return None;
     }
     Some(Event::Connected {

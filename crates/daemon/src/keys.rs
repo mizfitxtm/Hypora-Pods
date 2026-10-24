@@ -64,18 +64,21 @@ pub fn load() -> Option<Keys> {
 }
 
 pub fn save(keys: &Keys) -> std::io::Result<()> {
-    let path = path().ok_or_else(|| std::io::Error::other("no config directory"))?;
+    save_to(&path().ok_or_else(|| std::io::Error::other("no config directory"))?, keys)
+}
+
+fn save_to(path: &std::path::Path, keys: &Keys) -> std::io::Result<()> {
     if let Some(dir) = path.parent() {
         std::fs::DirBuilder::new().recursive(true).mode(0o700).create(dir)?;
     }
     // Write beside the target and rename, so a crash never leaves half a key file.
     let tmp = path.with_extension("json.tmp");
-    let mut file = std::fs::OpenOptions::new().write(true).create(true).truncate(true).mode(0o600).open(&tmp)?;
-    // `mode` above only applies to a new file, so set it again in case the temp file was left behind
-    file.set_permissions(std::os::unix::fs::PermissionsExt::from_mode(0o600))?;
+    // Clear a leftover from a crash, then create_new refuses anything (a planted link too) that reappears.
+    let _ = std::fs::remove_file(&tmp);
+    let mut file = std::fs::OpenOptions::new().write(true).create_new(true).mode(0o600).open(&tmp)?;
     file.write_all(keys.to_json().as_bytes())?;
     file.sync_all()?;
-    std::fs::rename(&tmp, &path)
+    std::fs::rename(&tmp, path)
 }
 
 #[cfg(test)]
@@ -92,6 +95,22 @@ mod tests {
     fn debug_hides_the_keys() {
         let k = Keys { irk: [0xAB; 16], enc_key: [0xCD; 16] };
         assert_eq!(format!("{k:?}"), "Keys(redacted)");
+    }
+
+    #[test]
+    fn save_replaces_a_planted_link_instead_of_writing_through_it() {
+        let dir = std::env::temp_dir().join(format!("hypora-pods-keys-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let target = dir.join("precious");
+        std::fs::write(&target, "keep").unwrap();
+        let path = dir.join("keys.json");
+        std::os::unix::fs::symlink(&target, path.with_extension("json.tmp")).unwrap();
+        let k = Keys { irk: [1; 16], enc_key: [2; 16] };
+        save_to(&path, &k).unwrap();
+        assert_eq!(std::fs::read_to_string(&target).unwrap(), "keep");
+        assert_eq!(Keys::from_json(&std::fs::read_to_string(&path).unwrap()), Some(k));
+        assert_eq!(std::os::unix::fs::PermissionsExt::mode(&std::fs::metadata(&path).unwrap().permissions()) & 0o777, 0o600);
+        std::fs::remove_dir_all(&dir).unwrap();
     }
 
     #[test]

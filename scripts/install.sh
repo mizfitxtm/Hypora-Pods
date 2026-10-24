@@ -25,6 +25,24 @@ if [ "$PREFIX" != "$HOME/.local" ]; then
     sed -i "s|^ExecStart=.*|ExecStart=$PREFIX/bin/hypora-pods|" "$UNIT"
 fi
 
+# Tap controls need one udev rule so you can read the AirPods' key device (only that device).
+# This is the one step that asks for sudo; without a terminal it prints the command instead.
+RULE_SRC="udev/70-hypora-pods.rules"
+RULE_DEST="/etc/udev/rules.d/70-hypora-pods.rules"
+# Run the commands directly: pasting $PWD into a string for `sh -c` would let a quote in the folder name run as root.
+install_rule() {
+    sudo install -m644 "$RULE_SRC" "$RULE_DEST" && sudo udevadm control --reload && sudo udevadm trigger --subsystem-match=input
+}
+if ! cmp -s "$RULE_SRC" "$RULE_DEST" 2>/dev/null; then
+    echo "Tap controls: installing $RULE_DEST (needs sudo; lets you read the AirPods key device only)"
+    if [ -t 0 ] && command -v sudo >/dev/null && install_rule; then
+        echo "Tap controls enabled."
+    else
+        echo "Tap controls not enabled yet. To enable them, run this from the hypora-pods folder:" >&2
+        echo "  sudo install -m644 $RULE_SRC $RULE_DEST && sudo udevadm control --reload && sudo udevadm trigger --subsystem-match=input" >&2
+    fi
+fi
+
 systemctl --user daemon-reload
 systemctl --user enable hypora-pods.service
 systemctl --user restart hypora-pods.service

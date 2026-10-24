@@ -8,6 +8,7 @@ mod sleep;
 mod l2cap;
 mod link;
 mod state;
+mod taps;
 
 use aap_protocol::ipc::{socket_path, state_path, Verb};
 use aap_protocol::status::Status;
@@ -61,10 +62,11 @@ fn publish(shared: &mut Shared, path: &Path) -> std::io::Result<()> {
         std::os::unix::fs::DirBuilderExt::mode(std::fs::DirBuilder::new().recursive(true), 0o700).create(dir)?;
     }
     let tmp = path.with_extension("json.tmp");
+    // Clear a leftover from a crash, then create_new refuses anything (a planted link too) that reappears.
+    let _ = std::fs::remove_file(&tmp);
     let mut file = std::fs::OpenOptions::new()
         .write(true)
-        .create(true)
-        .truncate(true)
+        .create_new(true)
         .mode(0o600) // owner only: the file carries the device identity
         .open(&tmp)?;
     file.write_all(line.as_bytes())?;
@@ -194,6 +196,8 @@ async fn main() -> std::process::ExitCode {
         });
         let (ear_tx, ear_rx) = tokio::sync::watch::channel(media::EarState::default());
         tokio::spawn(media::run(ear_rx));
+        let (addr_tx, addr_rx) = tokio::sync::watch::channel(String::new());
+        tokio::spawn(taps::run(addr_rx));
         let (raw_sleep_tx, mut raw_sleep_rx) = tokio::sync::mpsc::channel::<bool>(4);
         tokio::spawn(async move {
             if let Err(e) = sleep::watch(raw_sleep_tx).await {
@@ -323,6 +327,9 @@ async fn main() -> std::process::ExitCode {
                     address: guard.address.clone(),
                 };
                 ear_tx.send_if_modified(|v| std::mem::replace(v, ears.clone()) != ears);
+                // Tap controls follow only the pods that are connected now
+                let pods = if guard.status.connected { guard.address.clone() } else { String::new() };
+                addr_tx.send_if_modified(|v| std::mem::replace(v, pods.clone()) != pods);
                 let Shared { status, battery_watch, .. } = &mut *guard;
                 for text in battery_watch.check(status) {
                     tokio::spawn(async move { notify::send("AirPods", &text).await });

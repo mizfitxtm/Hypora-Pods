@@ -1,0 +1,3 @@
+# Lets the logged-in user read the AirPods' media-key device (and only that), so hypora-pods can
+# count stem taps. Install: see "Tap controls" in the README.
+SUBSYSTEM=="input", KERNEL=="event*", ATTRS{id/vendor}=="004c", ATTRS{name}=="*(AVRCP)", TAG+="uaccess"
